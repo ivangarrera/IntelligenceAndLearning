@@ -1,65 +1,52 @@
-import math
-
+from math import sqrt
 
 class Vehicle:
-    def __init__(self, x, y):
-        self.acceleration = [0, 0]
-        self.velocity = [0, -2]
-        self.position = [x, y]
-        self.max_speed = 1
-        self.max_force = 0.05
+	def __init__(self, x, y):
+		self.velocity = [0, -2]
+		self.position = [x, y]
+		self.max_speed = 5
+		self.max_force = 0.7
 
-    def update_location(self):
-        # Update velocity
-        self.add_two_vector(self.velocity, self.acceleration)
-        # Limit speed
-        self.limit(self.velocity, self.max_speed)
-        self.add_two_vector(self.position, self.velocity)
-        # Reset acceleration
-        self.acceleration = [0, 0]
-
-    def apply_force(self, force):
-        self.add_two_vector(self.acceleration, force)
-
-    # This method calculates the steering force where:
-    # steer = desired - velocity
-    def seek(self, target):
-        # Substract the target position to the vehicle position
-        desired = self.substract_two_vector(target, self.position)
-        # Scale to maximum speed
-        desired = self.set_magnitude(desired, self.max_speed)
-        steer = self.substract_two_vector(desired, self.velocity)
-        #self.limit(steer, self.max_force)
-        self.apply_force(steer)
-
-    def limit(self, vect, value):
-        for i in range(len(vect)):
-            if vect[i] > value:
-                vect[i] = value
+	def apply_force(self, force):
+		steering_force = self.__truncate(force, self.max_force)
+		self.velocity = self.__truncate(self.add(self.velocity, steering_force), self.max_speed)
+		self.position = self.add(self.position, self.velocity)
 
 
-    def add_value_to_vector(self, vect, value):
-        for i in range(len(vect)):
-            vect[i] += value
-
-    def add_two_vector(self, vect1, vect2):
-        assert len(vect1) == len(vect2)
-        for i in range(len(vect1)):
-            vect1[i] += vect2[i]
+	# This method calculates the steering force where:
+	# steer = desired - velocity
+	def seek(self, target):
+		desired_velocity = self.mult(self.normalize(self.sub(target, self.position)), self.max_speed)
+		steering_force = self.sub(desired_velocity, self.velocity)
+		self.apply_force(steering_force)
 
 
-    def substract_two_vector(self, vect1, vect2):
-        assert len(vect1) == len(vect2)
-        for i in range(len(vect1)):
-            vect1[i] -= vect2[i]
-        return vect1
+	def magnitude(self, vector):
+		return sqrt(sum(vector[i]*vector[i] for i in range(len(vector))))
 
-    def set_magnitude(self, vector, magn):
-        if vector[0] != 0 and vector[1] != 0:
-            magnitude = math.sqrt(vector[0]*vector[0] + vector[1]*vector[1])
-            new_vx = vector[0] * magn / magnitude
-            new_vy = vector[1] * magn / magnitude
-            new_vector = [new_vx, new_vy]
-            return new_vector
-        else:
-            return [0, 0]
+	def add(self, vect1, vect2):
+		assert len(vect1) == len(vect2)
+		return [vect1[i]+vect2[i] for i in range(len(vect1))]
+
+	def sub(self, vect1, vect2):
+		assert len(vect1) == len(vect2)
+		return [vect1[i]-vect2[i] for i in range(len(vect1))]
+
+	def mult(self, vect1, value):
+		return [vect1[i]*value for i in range(len(vect1))]
+
+	def normalize(self, vector):
+		vect_magnitude = self.magnitude(vector)
+		return [vector[i]/vect_magnitude for i in range(len(vector))]
+
+	def __truncate(self, vector, value):
+		magnitude = self.absolute(vector)
+		for i in range(len(magnitude)):
+			if magnitude[i] > value:
+				vector = self.mult(self.mult(vector, value), (1/magnitude[i]))
+		return vector
+
+	def absolute(self, vector):
+		return [abs(vector[i]) for i in range(len(vector))]
+
+
