@@ -6,52 +6,60 @@ from colour import Color
 # CONSTANTS
 
 #             R    G    B
-WHITE     = (255, 255, 255)
 BLACK     = (  0,   0,   0)
 RED       = (255,   0,   0)
-GREEN     = (  0, 255,   0)
 DARKGREEN = (  0, 155,   0)
-DARKGRAY  = ( 40,  40,  40)
 BGCOLOR   = BLACK
 
 WIDTH           = 700
 HEIGHT          = 700
-NUM_FOOD        = 200
-NUM_POISON      = 20
-NUM_VEHICLES    = 5
+NUM_FOOD        = 500
+NUM_POISON      = 30
+NUM_VEHICLES    = 10
 food            = []
 poison          = []
 figures         = []
 poison_figures  = []
-vehicles = []
+vehicles        = []
 vehicles_figures = []
+
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
-green = Color("green")
-colors = list(green.range_to(Color("red"), 10))
+green = Color("LightBlue")
+colors = list(green.range_to(Color("BlueViolet"), 10))
+
+
+class Text:
+    def __init__(self, FontName=None, FontSize=25):
+        pygame.font.init()
+        self.font = pygame.font.Font(FontName, FontSize)
+        self.size = FontSize
+
+    def render(self, surface, text, color, pos):
+        text = text
+        x, y = pos
+        for i in text.split("\r"):
+            surface.blit(self.font.render(i, 1, color), (x, y))
+            y += self.size
+
 
 class Gui:
     def __init__(self, food, poison, figures, poison_figures, screen, vehicles, vehicles_figures):
         pygame.mixer.init()
         pygame.init()
+        text = Text()
 
         # Create food rectangle objects
-        for i in range(NUM_FOOD):
-            x = random.uniform(0, WIDTH)
-            y = random.uniform(0, HEIGHT)
-            food.append([x, y])
+        self.create_rectangles(food, NUM_FOOD)
 
         # Create poison rectangle objects
-        for i in range(NUM_POISON):
-            x = random.uniform(0, WIDTH)
-            y = random.uniform(0, HEIGHT)
-            poison.append([x, y])
+        self.create_rectangles(poison, NUM_POISON)
 
         # Create vehicle rectangle objects
         for i in range(NUM_VEHICLES):
             x = random.uniform(0, WIDTH)
             y = random.uniform(0, HEIGHT)
-            vehicles.append(Vehicle.Vehicle(x, y))
+            vehicles.append(Vehicle.Vehicle(x, y, None))
 
         clock = pygame.time.Clock()
         self.draw_vehicles()
@@ -69,7 +77,7 @@ class Gui:
                 y = random.uniform(0, HEIGHT)
                 food.append([x, y])
 
-            # Renovate poison, approximately each 1% of time
+            # Renovate poison, approximately each 5% of time
             if random.uniform(0, 1) > 0.95:
                 x = random.uniform(0, WIDTH)
                 y = random.uniform(0, HEIGHT)
@@ -82,14 +90,15 @@ class Gui:
                         # Decrease health periodically
                         vehicles[i].decrease_health(0.005)
 
-                        # Calculate the nearest target (food or poison)
-                        best_food_distance, index = vehicles[i].which_is_closest(food)
-                        best_poison_distance, ind = vehicles[i].which_is_closest(poison)
+                        # Calculate the nearest target (food or poison). We have on count the perceptions
+                        # (how far can the vehicle perceive the food or poison)
+                        best_food_distance, index = vehicles[i].which_is_closest(food, vehicles[i].dna[2])
+                        best_poison_distance, ind = vehicles[i].which_is_closest(poison, vehicles[i].dna[3])
+
                         if best_food_distance < best_poison_distance:
                             vehicles[i].boundaries(WIDTH, HEIGHT)
                             food, element = vehicles[i].eat(food, index, best_food_distance, 0.1, 0)
                         else:
-                            vehicles[i].boundaries(WIDTH, HEIGHT)
                             poison, element = vehicles[i].eat(poison, ind, best_poison_distance, -0.3, 1)
 
                         # Calculate the new vehicle's position
@@ -100,6 +109,12 @@ class Gui:
                         vehicles_figures[i].x = x_v
                         vehicles_figures[i].y = y_v
                         vehicles_figures[i].move_ip(x_v - element[0], y_v - element[1])
+
+                        # Append a child vehicle?
+                        child_vehicle = vehicles[i].clone()
+                        if child_vehicle is not None:
+                            vehicles.append(child_vehicle)
+
                     else:  # Not health enough. Vehicle broken.
                         vehicles.remove(vehicles[i])
                         break
@@ -120,9 +135,19 @@ class Gui:
 
             self.draw_vehicles()
 
+            # Display the text
+            number_of_food = 0
+            number_of_poison = 0
+            for i in range(len(vehicles)):
+                number_of_food += vehicles[i].number_of_food_eated
+                number_of_poison += vehicles[i].number_of_poison_eated
+
+            text.render(screen, "Food eated --> {}".format(number_of_food), (255, 255, 255), (0, 0))
+            text.render(screen, "Poison eated --> {}".format(number_of_poison), (255, 255, 255), (0, 20))
+
             pygame.display.update()
 
-            clock.tick(60)
+            clock.tick(100)
 
     # Methods
 
@@ -145,5 +170,11 @@ class Gui:
             _blue = color.get_rgb()[2]*255
             color = (_red, _green, _blue)
             pygame.draw.rect(screen, color, vehicles_figures[i])
+
+    def create_rectangles(self, list, num_elments):
+        for i in range(num_elments):
+            x = random.uniform(0, WIDTH)
+            y = random.uniform(0, HEIGHT)
+            list.append([x, y])
 
 gui = Gui(food, poison, figures, poison_figures, screen, vehicles, vehicles_figures)
