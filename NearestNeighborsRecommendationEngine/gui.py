@@ -6,60 +6,60 @@ import math
 class Gui:
     def __init__(self):
         # Load data
-        self.data = loads(open("movies.json").read())
-        self.person1 = ""
-        self.person2 = ""
+        self._data = loads(open("movies.json").read())
+        self._person1 = ""
+        self._person2 = ""
 
-        self.lb1, self.lb2, self.btn, self.root = self.create_interface()
+        self._lb1, self._lb2, self._btn, self._root = self._create_interface()
 
         # Get users information and users name.
-        self.users = self._get_users_by_name(self.data)
-        self.users_name = self._get_users_name(self.data)
+        self._users = self._get_users_by_name(self._data)
+        self._users_name = self._get_users_name(self._data)
 
-        self.fill_list_box(self.lb1, self.lb2)
-        self.pack_items(self.lb1, self.lb2, self.btn)
-        self.root.mainloop()
+        self._fill_list_box(self._lb1, self._lb2)
+        self._pack_items(self._lb1, self._lb2, self._btn)
+        self._root.mainloop()
 
     #  This functions creates the graphic interface and add the items.
-    def create_interface(self):
+    def _create_interface(self):
         root = Tk()
         root.config(bg='black')
         root.geometry('500x500')
         lb1 = Listbox(bg='black', fg='white', exportselection=0)
         lb2 = Listbox(bg='black', fg='white', exportselection=0)
-        btn = Button(root, text="SUBMIT", command=self.euclidean_similarity)
+        btn = Button(root, text="SUBMIT", command=self._euclidean_similarity)
         return lb1, lb2, btn, root
 
-    def fill_list_box(self, lb1, lb2):
-        for i in range(len(self.users_name)):
-            lb1.insert(i+1, self.users_name[i])
-            lb2.insert(i+1, self.users_name[i])
+    def _fill_list_box(self, lb1, lb2):
+        for i in range(len(self._users_name)):
+            lb1.insert(i+1, self._users_name[i])
+            lb2.insert(i+1, self._users_name[i])
 
-    def pack_items(self, lb1, lb2, btn):
+    def _pack_items(self, lb1, lb2, btn):
         btn.pack(side=BOTTOM)
         lb1.pack(side=LEFT, fill=BOTH, expand=1)
         lb2.pack(side=LEFT, fill=BOTH, expand=1)
-        lb1.bind('<<ListboxSelect>>', self.onselect_lb1)
-        lb2.bind('<<ListboxSelect>>', self.onselect_lb2)
+        lb1.bind('<<ListboxSelect>>', self._onselect_lb1)
+        lb2.bind('<<ListboxSelect>>', self._onselect_lb2)
 
     #  Functions called when an item is chosen
-    def onselect_lb1(self, evt):
+    def _onselect_lb1(self, evt):
         w = evt.widget
         index_list1 = int(w.curselection()[0])
-        self.person1 = w.get(index_list1)
+        self._person1 = w.get(index_list1)
 
-    def onselect_lb2(self, evt):
+    def _onselect_lb2(self, evt):
         w = evt.widget
         index_list2 = int(w.curselection()[0])
-        self.person2 = w.get(index_list2)
+        self._person2 = w.get(index_list2)
 
     #  Function called when button is pressed. This function calculates
     #  the similarities between actors.
-    def euclidean_similarity(self):
-        u1 = self.users[self.person1]
-        u2 = self.users[self.person2]
-        self.clean_name_and_timestamp(u1)
-        self.clean_name_and_timestamp(u2)
+    def _euclidean_similarity(self):
+        u1 = self._users[self._person1]
+        u2 = self._users[self._person2]
+        self._clean_name_and_timestamp(u1)
+        self._clean_name_and_timestamp(u2)
         sum = 0
         for i, j in zip(u1, u2):
             num_movies_first = u1[i]
@@ -89,7 +89,7 @@ class Gui:
             list.append(data['users'][i]['name'])
         return list
 
-    def clean_name_and_timestamp(self, dict):
+    def _clean_name_and_timestamp(self, dict):
         dict.pop('name', None)
         dict.pop('timestamp', None)
 
